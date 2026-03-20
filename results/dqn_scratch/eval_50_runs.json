@@ -1,0 +1,10 @@
+{
+  "checkpoint": "results/dqn_scratch/checkpoints/best_model.pt",
+  "episodes": 50,
+  "mean_reward": 14.781877145612452,
+  "std_reward": 7.2536944299671395,
+  "min_reward": 1.602272727272727,
+  "max_reward": 24.034090909090903,
+  "mean_length": 19.28,
+  "std_length": 8.856726257483631
+}
