@@ -21,7 +21,12 @@ def make_env(seed: int):
 
 
 def evaluate(checkpoint_path: str, episodes: int, seed: int, cpu: bool) -> Dict[str, float]:
-    device = "cuda" if torch.cuda.is_available() and not cpu else "cpu"
+    if not cpu and torch.cuda.is_available():
+        device = "cuda"
+    elif not cpu and torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
 
     env, obs = make_env(seed)
     state_dim = int(np.asarray(obs, dtype=np.float32).size)

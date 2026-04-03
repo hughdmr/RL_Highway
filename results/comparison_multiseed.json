@@ -1,0 +1,58 @@
+[
+  {
+    "model": "DQN-scratch",
+    "per_seed": [
+      {
+        "mean_reward": 10.574609592058891,
+        "std_reward": 7.4075193255598375,
+        "mean_length": 12.38,
+        "crash_rate": 0.88,
+        "seed": 100
+      },
+      {
+        "mean_reward": 10.774039215260284,
+        "std_reward": 6.948254602359703,
+        "mean_length": 12.64,
+        "crash_rate": 0.88,
+        "seed": 200
+      },
+      {
+        "mean_reward": 10.85629345866305,
+        "std_reward": 6.713028613765608,
+        "mean_length": 12.62,
+        "crash_rate": 0.86,
+        "seed": 300
+      }
+    ],
+    "overall_mean": 10.734980755327408,
+    "overall_std": 0.11826699355135219
+  },
+  {
+    "model": "SB3-DQN",
+    "per_seed": [
+      {
+        "mean_reward": 10.340920298977561,
+        "std_reward": 7.217787710845726,
+        "mean_length": 12.36,
+        "crash_rate": 0.88,
+        "seed": 100
+      },
+      {
+        "mean_reward": 11.594567407373866,
+        "std_reward": 6.451178387963244,
+        "mean_length": 14.0,
+        "crash_rate": 0.9,
+        "seed": 200
+      },
+      {
+        "mean_reward": 9.662443418701034,
+        "std_reward": 5.46556639041664,
+        "mean_length": 11.46,
+        "crash_rate": 0.96,
+        "seed": 300
+      }
+    ],
+    "overall_mean": 10.53264370835082,
+    "overall_std": 0.8003516627822767
+  }
+]

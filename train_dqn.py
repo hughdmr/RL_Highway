@@ -50,7 +50,12 @@ def train(config: argparse.Namespace) -> Dict[str, float]:
     state_dim = int(np.asarray(obs, dtype=np.float32).size)
     action_dim = int(env.action_space.n)
 
-    device = "cuda" if torch.cuda.is_available() and not config.cpu else "cpu"
+    if not config.cpu and torch.cuda.is_available():
+        device = "cuda"
+    elif not config.cpu and torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
     agent = DQNAgent(
         state_dim=state_dim,
         action_dim=action_dim,
