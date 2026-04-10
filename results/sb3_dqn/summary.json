@@ -1,9 +1,9 @@
 {
   "run_name": "sb3_dqn",
   "env_id": "highway-v0",
-  "total_timesteps": 5000,
-  "episodes": 436,
-  "best_episode_reward": 28.003109574317932,
+  "total_timesteps": 30000,
+  "episodes": 1973,
+  "best_episode_reward": 29.154310941696167,
   "model_path": "results/sb3_dqn/model.zip",
   "metrics_csv": "results/sb3_dqn/metrics.csv"
 }
