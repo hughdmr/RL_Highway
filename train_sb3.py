@@ -2,6 +2,7 @@ import argparse
 import csv
 import json
 import os
+import sys
 from pathlib import Path
 
 import gymnasium as gym
@@ -124,25 +125,30 @@ def train(config: argparse.Namespace) -> dict:
     return summary
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train a Stable-Baselines3 DQN on highway-v0.")
     parser.add_argument("--run-name", type=str, default="sb3_dqn")
     parser.add_argument("--output-dir", type=str, default="results")
     parser.add_argument("--seed", type=int, default=42)
 
-    parser.add_argument("--total-timesteps", type=int, default=200_000)
+    parser.add_argument("--total-timesteps", "--total_timesteps", type=int, default=200_000)
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--batch-size", type=int, default=128)
-    parser.add_argument("--replay-size", type=int, default=100_000)
-    parser.add_argument("--learning-starts", type=int, default=5_000)
-    parser.add_argument("--train-freq", type=int, default=1)
-    parser.add_argument("--target-update-interval", type=int, default=1_000)
+    parser.add_argument("--batch-size", "--batch_size", type=int, default=128)
+    parser.add_argument("--replay-size", "--replay_size", type=int, default=100_000)
+    parser.add_argument("--learning-starts", "--learning_starts", type=int, default=5_000)
+    parser.add_argument("--train-freq", "--train_freq", type=int, default=1)
+    parser.add_argument("--target-update-interval", "--target_update_interval", type=int, default=1_000)
 
-    parser.add_argument("--eps-start", type=float, default=1.0)
-    parser.add_argument("--eps-end", type=float, default=0.05)
-    parser.add_argument("--eps-decay-fraction", type=float, default=0.5)
-    return parser.parse_args()
+    parser.add_argument("--eps-start", "--eps_start", type=float, default=1.0)
+    parser.add_argument("--eps-end", "--eps_end", type=float, default=0.05)
+    parser.add_argument("--eps-decay-fraction", "--eps_decay_fraction", type=float, default=0.5)
+
+    # Be robust to accidental whitespace-only tokens from shell line-continuation formatting.
+    if argv is None:
+        argv = sys.argv[1:]
+    argv = [arg for arg in argv if arg.strip()]
+    return parser.parse_args(argv)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,25 @@
+{
+  "run_name": "dqn_safety_curriculum",
+  "env_id": "highway-v0",
+  "total_timesteps": 20000,
+  "episodes": 1264,
+  "best_episode_reward": 29.735563232453757,
+  "crash_rate": 0.8140822784810127,
+  "final_checkpoint": "results/dqn_safety_curriculum/checkpoints/last_model.pt",
+  "best_checkpoint": "results/dqn_safety_curriculum/checkpoints/best_model.pt",
+  "metrics_csv": "results/dqn_safety_curriculum/metrics.csv",
+  "extension": {
+    "use_curriculum": true,
+    "curriculum_densities": [
+      0.6,
+      0.8,
+      1.0
+    ],
+    "curriculum_fractions": [
+      0.3,
+      0.6,
+      1.0
+    ],
+    "extra_crash_penalty": 0.5
+  }
+}
