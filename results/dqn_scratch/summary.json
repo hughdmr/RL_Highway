@@ -1,9 +1,9 @@
 {
   "run_name": "dqn_scratch",
   "env_id": "highway-v0",
-  "total_timesteps": 30000,
-  "episodes": 1885,
-  "best_episode_reward": 29.34368721444201,
+  "total_timesteps": 50000,
+  "episodes": 2555,
+  "best_episode_reward": 329.0173814265304,
   "final_checkpoint": "results/dqn_scratch/checkpoints/last_model.pt",
   "best_checkpoint": "results/dqn_scratch/checkpoints/best_model.pt",
   "metrics_csv": "results/dqn_scratch/metrics.csv"
