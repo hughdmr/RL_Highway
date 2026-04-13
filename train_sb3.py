@@ -9,7 +9,7 @@ import gymnasium as gym
 import highway_env
 import numpy as np
 import torch
-from stable_baselines3 import DQN
+from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.callbacks import BaseCallback
 
 from shared_core_config import SHARED_CORE_CONFIG, SHARED_CORE_ENV_ID
@@ -66,25 +66,41 @@ def train(config: argparse.Namespace) -> dict:
         device = "cpu"
     print(f"Using device: {device}")
 
-    model = DQN(
-        "MlpPolicy",
-        env,
-        learning_rate=config.lr,
-        batch_size=config.batch_size,
-        buffer_size=config.replay_size,
-        learning_starts=config.learning_starts,
-        gamma=config.gamma,
-        target_update_interval=config.target_update_interval,
-        train_freq=config.train_freq,
-        gradient_steps=1,
-        policy_kwargs={"net_arch": [256, 256]},
-        exploration_fraction=config.eps_decay_fraction,
-        exploration_initial_eps=config.eps_start,
-        exploration_final_eps=config.eps_end,
-        seed=config.seed,
-        device=device,
-        verbose=0,
-    )
+    algo = config.algo.upper()
+    if algo == "PPO":
+        model = PPO(
+            "MlpPolicy",
+            env,
+            learning_rate=config.lr,
+            batch_size=config.batch_size,
+            gamma=config.gamma,
+            n_steps=config.n_steps,
+            n_epochs=config.n_epochs,
+            policy_kwargs={"net_arch": [256, 256]},
+            seed=config.seed,
+            device=device,
+            verbose=0,
+        )
+    else:
+        model = DQN(
+            "MlpPolicy",
+            env,
+            learning_rate=config.lr,
+            batch_size=config.batch_size,
+            buffer_size=config.replay_size,
+            learning_starts=config.learning_starts,
+            gamma=config.gamma,
+            target_update_interval=config.target_update_interval,
+            train_freq=config.train_freq,
+            gradient_steps=1,
+            policy_kwargs={"net_arch": [256, 256]},
+            exploration_fraction=config.eps_decay_fraction,
+            exploration_initial_eps=config.eps_start,
+            exploration_final_eps=config.eps_end,
+            seed=config.seed,
+            device=device,
+            verbose=0,
+        )
 
     callback = EpisodeMetricsCallback(verbose=1)
     model.learn(total_timesteps=config.total_timesteps, callback=callback)
@@ -126,8 +142,9 @@ def train(config: argparse.Namespace) -> dict:
 
 
 def parse_args(argv=None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train a Stable-Baselines3 DQN on highway-v0.")
-    parser.add_argument("--run-name", type=str, default="sb3_dqn")
+    parser = argparse.ArgumentParser(description="Train a Stable-Baselines3 agent on highway-v0.")
+    parser.add_argument("--algo", type=str, default="DQN", choices=["DQN", "PPO"], help="Algorithme SB3 (DQN ou PPO)")
+    parser.add_argument("--run-name", type=str, default="", help="Nom du run (défaut: sb3_dqn ou sb3_ppo selon --algo)")
     parser.add_argument("--output-dir", type=str, default="results")
     parser.add_argument("--seed", type=int, default=42)
 
@@ -135,14 +152,19 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--batch-size", "--batch_size", type=int, default=128)
+
+    # DQN-only
     parser.add_argument("--replay-size", "--replay_size", type=int, default=100_000)
     parser.add_argument("--learning-starts", "--learning_starts", type=int, default=5_000)
     parser.add_argument("--train-freq", "--train_freq", type=int, default=1)
     parser.add_argument("--target-update-interval", "--target_update_interval", type=int, default=1_000)
-
     parser.add_argument("--eps-start", "--eps_start", type=float, default=1.0)
     parser.add_argument("--eps-end", "--eps_end", type=float, default=0.05)
     parser.add_argument("--eps-decay-fraction", "--eps_decay_fraction", type=float, default=0.5)
+
+    # PPO-only
+    parser.add_argument("--n-steps", "--n_steps", type=int, default=512, help="Horizon de rollout PPO")
+    parser.add_argument("--n-epochs", "--n_epochs", type=int, default=10, help="Epochs par update PPO")
 
     # Be robust to accidental whitespace-only tokens from shell line-continuation formatting.
     if argv is None:
@@ -153,5 +175,7 @@ def parse_args(argv=None) -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
+    if not args.run_name:
+        args.run_name = f"sb3_{args.algo.lower()}"
     os.makedirs(args.output_dir, exist_ok=True)
     train(args)

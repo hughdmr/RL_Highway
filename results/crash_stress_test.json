@@ -1,0 +1,30 @@
+[
+  {
+    "model": "DQN-scratch",
+    "n_simulations": 10,
+    "n_crashes": 0,
+    "crash_rate": 0.0,
+    "mean_reward": 22.68236312961292,
+    "std_reward": 1.2879793595366174,
+    "mean_episode_length": 30.0,
+    "crash_seeds": []
+  },
+  {
+    "model": "SB3-DQN",
+    "n_simulations": 10,
+    "n_crashes": 7,
+    "crash_rate": 0.7,
+    "mean_reward": 15.793057264481323,
+    "std_reward": 7.518278827725808,
+    "mean_episode_length": 18.8,
+    "crash_seeds": [
+      0,
+      2,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  }
+]
