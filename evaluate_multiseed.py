@@ -157,7 +157,6 @@ def print_comparison_table(results: List[Dict]) -> None:
         print(f"{r['model']:<15} {r['overall_mean']:>14.3f} {r['overall_std']:>12.3f}")
     print("=" * 65)
 
-    # Per-seed detail
     seeds = [s["seed"] for s in results[0]["per_seed"]]
     header = f"{'Model':<15}" + "".join(f"  seed={s}" for s in seeds)
     print("\n" + header)

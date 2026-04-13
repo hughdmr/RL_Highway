@@ -36,15 +36,11 @@ import time
 from pathlib import Path
 
 import gymnasium as gym
-import highway_env  # registers the envs
+import highway_env 
 import numpy as np
 
 from shared_core_config import SHARED_CORE_CONFIG, SHARED_CORE_ENV_ID
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Helpers
-# ──────────────────────────────────────────────────────────────────────────────
 
 def make_env(render_mode: str):
     """Create and configure the highway environment."""
@@ -85,10 +81,6 @@ def load_sb3(checkpoint_path: str):
         print("  → algo détecté : DQN")
         return DQN.load(checkpoint_path)
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Episode runners
-# ──────────────────────────────────────────────────────────────────────────────
 
 def run_episodes_human(agent, is_sb3: bool, episodes: int, seed: int, delay: float = 0.0):
     """Play episodes in a live window."""
@@ -154,10 +146,6 @@ def _run(env, agent, is_sb3: bool, episodes: int, seed: int, delay: float = 0.0)
     return rewards
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Export helpers
-# ──────────────────────────────────────────────────────────────────────────────
-
 def save_video(all_frames: list[list[np.ndarray]], output: Path, fps: int = 15):
     """Save all episode frames to an MP4 file using imageio."""
     try:
@@ -194,10 +182,6 @@ def save_gif(all_frames: list[list[np.ndarray]], output: Path, fps: int = 15):
     print(f"GIF saved → {output}")
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Main
-# ──────────────────────────────────────────────────────────────────────────────
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Render a trained DQN agent on highway-v0.")
     parser.add_argument("--checkpoint", type=str, required=True,
@@ -230,18 +214,15 @@ def main():
         args.seed = random.randint(0, 100_000)
         print(f"Seed aléatoire : {args.seed}")
 
-    # ── Resolve output path ──────────────────────────────────────────────────
     if args.mode in ("video", "gif") and not args.output:
         ext = "mp4" if args.mode == "video" else "gif"
         ckpt_stem = Path(args.checkpoint).stem
         args.output = f"results/videos/{ckpt_stem}.{ext}"
 
-    # ── Load model ───────────────────────────────────────────────────────────
     print(f"Loading {'SB3' if args.sb3 else 'DQN-scratch'} checkpoint: {args.checkpoint}")
     if args.sb3:
         agent = load_sb3(args.checkpoint)
     else:
-        # Need state_dim/action_dim — make a temporary env to infer them
         _tmp_env = make_env("rgb_array")
         _tmp_obs, _ = _tmp_env.reset()
         state_dim = int(np.asarray(_tmp_obs, dtype=np.float32).size)
@@ -251,7 +232,6 @@ def main():
 
     print(f"Running {args.episodes} episode(s) in mode='{args.mode}' ...")
 
-    # ── Run ──────────────────────────────────────────────────────────────────
     if args.mode == "human":
         run_episodes_human(agent, args.sb3, args.episodes, args.seed, args.delay)
 

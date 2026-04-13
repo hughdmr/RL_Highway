@@ -79,7 +79,6 @@ def plot_comparison_bar(comparison_json: Path, output: Path) -> None:
     means = [d["overall_mean"] for d in data]
     stds = [d["overall_std"] for d in data]
 
-    # per-seed breakdown
     seeds = [s["seed"] for s in data[0]["per_seed"]]
     seed_means = {d["model"]: [s["mean_reward"] for s in d["per_seed"]] for d in data}
 
@@ -87,7 +86,6 @@ def plot_comparison_bar(comparison_json: Path, output: Path) -> None:
 
     colors = COLORS[: len(models)]
 
-    # --- Bar chart overall ---
     bars = axes[0].bar(models, means, yerr=stds, capsize=8, color=colors, alpha=0.8, edgecolor="black")
     axes[0].set_ylabel("Mean reward (50 eps × 3 seeds)")
     axes[0].set_title("Overall comparison")
@@ -100,7 +98,6 @@ def plot_comparison_bar(comparison_json: Path, output: Path) -> None:
             ha="center", va="bottom", fontsize=9,
         )
 
-    # --- Per-seed grouped bar ---
     x = np.arange(len(seeds))
     n_models = len(models)
     width = 0.8 / n_models

@@ -1,9 +1,10 @@
 {
-  "run_name": "sb3_dqn",
+  "run_name": "sb3_ppo",
   "env_id": "highway-v0",
   "total_timesteps": 50000,
-  "episodes": 2467,
-  "best_episode_reward": 326.5836160182953,
-  "model_path": "results/sb3_dqn/model.zip",
-  "metrics_csv": "results/sb3_dqn/metrics.csv"
+  "episodes": 337,
+  "best_episode_reward": 212.3068934082985,
+  "model_path": "results/sb3_ppo/model.zip",
+  "best_checkpoint": "results/sb3_ppo/checkpoints/best_model.zip",
+  "metrics_csv": "results/sb3_ppo/metrics.csv"
 }

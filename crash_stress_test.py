@@ -79,7 +79,6 @@ def run_stress_test(step_fn, n_simulations: int, base_seed: int = 0, label: str 
         rewards.append(ep_reward)
         lengths.append(ep_len)
 
-        # Affichage de progression toutes les 50 sims
         if (i + 1) % 50 == 0 or (i + 1) == n_simulations:
             crash_rate_so_far = n_crashes / (i + 1)
             print(

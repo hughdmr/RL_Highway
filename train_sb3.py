@@ -203,15 +203,12 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--eps-end", "--eps_end", type=float, default=0.05)
     parser.add_argument("--eps-decay-fraction", "--eps_decay_fraction", type=float, default=0.5)
 
-    # PPO-only
     parser.add_argument("--n-steps", "--n_steps", type=int, default=512, help="Horizon de rollout PPO")
     parser.add_argument("--n-epochs", "--n_epochs", type=int, default=10, help="Epochs par update PPO")
 
-    # Checkpoints
     parser.add_argument("--checkpoint-every-steps", "--checkpoint_every_steps", type=int, default=50_000,
                         help="Sauvegarde un checkpoint toutes les N steps")
 
-    # Be robust to accidental whitespace-only tokens from shell line-continuation formatting.
     if argv is None:
         argv = sys.argv[1:]
     argv = [arg for arg in argv if arg.strip()]
