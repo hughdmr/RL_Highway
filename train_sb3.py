@@ -21,46 +21,167 @@ import argparse
 import csv
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
+from typing import Any
 
 import gymnasium as gym
 import highway_env
 import numpy as np
 import torch
 from stable_baselines3 import DQN, PPO
+<<<<<<< HEAD
 from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback, EvalCallback
+=======
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback
+>>>>>>> 11a6390 (training in hard conditions)
 
-from safe_driving_wrapper import SafeDrivingRewardWrapper
 from shared_core_config import SHARED_CORE_CONFIG, SHARED_CORE_ENV_ID
 
 
 class EpisodeMetricsCallback(BaseCallback):
-    """Records per-episode reward and length during training."""
+    """Records per-episode reward, length, and env metrics during training."""
 
     def __init__(self, verbose: int = 0):
         super().__init__(verbose)
         self._ep_reward = 0.0
         self._ep_length = 0
-        self.episode_rewards: list = []
-        self.episode_lengths: list = []
-        self.episode_steps: list = []
+        self._ep_metric_sums: dict[str, float] = {}
+        self._ep_metric_counts: dict[str, int] = {}
+        self._ep_crashed = False
+        self._ep_lane_changes = 0
+        self._prev_lane_id: int | None = None
+        self.episode_rows: list[dict[str, Any]] = []
+        self.episode_rewards: list[float] = []
+        self.episode_lengths: list[int] = []
+        self.episode_steps: list[int] = []
+        self.metric_columns: list[str] = []
+        self._metric_column_set: set[str] = set()
+
+    def _register_metric_column(self, column_name: str) -> None:
+        if column_name not in self._metric_column_set:
+            self._metric_column_set.add(column_name)
+            self.metric_columns.append(column_name)
+
+    def _accumulate_info_metrics(self, info: dict[str, Any]) -> None:
+        for key, value in info.items():
+            if isinstance(value, bool):
+                numeric_value = float(value)
+            elif isinstance(value, (int, float, np.integer, np.floating)):
+                numeric_value = float(value)
+            else:
+                continue
+
+            if np.isnan(numeric_value):
+                continue
+
+            self._ep_metric_sums[key] = self._ep_metric_sums.get(key, 0.0) + numeric_value
+            self._ep_metric_counts[key] = self._ep_metric_counts.get(key, 0) + 1
+
+            if key == "crashed" and bool(value):
+                self._ep_crashed = True
+
+    def _step_info(self) -> dict[str, Any]:
+        infos = self.locals.get("infos", [])
+        if isinstance(infos, (list, tuple)) and infos:
+            info = infos[0]
+            return info if isinstance(info, dict) else {}
+        if isinstance(infos, dict):
+            return infos
+        return {}
+
+    def _extract_lane_id(self, info: dict[str, Any]) -> int | None:
+        lane_index = info.get("lane_index")
+        if isinstance(lane_index, (tuple, list)) and lane_index:
+            candidate = lane_index[-1]
+            if isinstance(candidate, (int, np.integer)):
+                return int(candidate)
+        if isinstance(lane_index, (int, np.integer)):
+            return int(lane_index)
+        return None
+
+    def _update_lane_changes(self, info: dict[str, Any]) -> None:
+        lane_id = self._extract_lane_id(info)
+        if lane_id is None:
+            return
+        if self._prev_lane_id is not None and lane_id != self._prev_lane_id:
+            self._ep_lane_changes += 1
+        self._prev_lane_id = lane_id
+
+    def _build_episode_row(self) -> dict[str, Any]:
+        row: dict[str, Any] = {
+            "episode": len(self.episode_rewards) + 1,
+            "global_step": self.num_timesteps,
+            "episode_reward": self._ep_reward,
+            "episode_length": self._ep_length,
+        }
+
+        for key, total in self._ep_metric_sums.items():
+            count = self._ep_metric_counts.get(key, 0)
+            if count > 0:
+                column_name = f"episode_{key}_mean"
+                row[column_name] = total / count
+                self._register_metric_column(column_name)
+
+        if "crashed" in self._ep_metric_sums:
+            row["episode_crashed"] = float(self._ep_crashed)
+            self._register_metric_column("episode_crashed")
+
+        return row
 
     def _on_step(self) -> bool:
+        info = self._step_info()
         self._ep_reward += float(self.locals["rewards"][0])
         self._ep_length += 1
+        self._accumulate_info_metrics(info)
+        self._update_lane_changes(info)
         if self.locals["dones"][0]:
+            row = self._build_episode_row()
+            self.episode_rows.append(row)
             self.episode_rewards.append(self._ep_reward)
             self.episode_lengths.append(self._ep_length)
             self.episode_steps.append(self.num_timesteps)
             if self.verbose and len(self.episode_rewards) % 10 == 0:
+                speed_mean = row.get("episode_speed_mean", None)
+                speed_str = f"speed_mean={speed_mean:.3f}" if speed_mean is not None else "speed_mean=N/A"
                 print(
                     f"episode={len(self.episode_rewards)} "
                     f"step={self.num_timesteps} "
-                    f"reward={self._ep_reward:.3f}"
+                    f"reward={self._ep_reward:.3f} "
+                    f"{speed_str} "
                 )
             self._ep_reward = 0.0
             self._ep_length = 0
+            self._ep_metric_sums.clear()
+            self._ep_metric_counts.clear()
+            self._ep_crashed = False
+            self._ep_lane_changes = 0
+            self._prev_lane_id = None
+        return True
+
+
+class BestModelCheckpointCallback(BaseCallback):
+    """Saves the best model according to episode reward."""
+
+    def __init__(self, checkpoints_dir: Path, verbose: int = 0):
+        super().__init__(verbose)
+        self.checkpoints_dir = checkpoints_dir
+        self.best_reward = -float("inf")
+        self._ep_reward = 0.0
+
+    def _on_step(self) -> bool:
+        self._ep_reward += float(self.locals["rewards"][0])
+        if self.locals["dones"][0]:
+            if self._ep_reward > self.best_reward:
+                self.best_reward = self._ep_reward
+                best_base = self.checkpoints_dir / "best_model"
+                self.model.save(str(best_base))
+                best_zip = best_base.with_suffix(".zip")
+                best_pt = self.checkpoints_dir / "best_model.pt"
+                if best_zip.exists():
+                    shutil.copyfile(best_zip, best_pt)
+            self._ep_reward = 0.0
         return True
 
 
@@ -68,7 +189,6 @@ def make_env(seed: int):
     _ = highway_env.__name__
     env = gym.make(SHARED_CORE_ENV_ID)
     env.unwrapped.configure(SHARED_CORE_CONFIG)
-    env = SafeDrivingRewardWrapper(env)
     env.reset(seed=seed)
     return env
 
@@ -76,6 +196,8 @@ def make_env(seed: int):
 def train(config: argparse.Namespace) -> dict:
     run_dir = Path(config.output_dir) / config.run_name
     run_dir.mkdir(parents=True, exist_ok=True)
+    checkpoints_dir = run_dir / "checkpoints"
+    checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
     env = make_env(config.seed)
 
@@ -123,6 +245,7 @@ def train(config: argparse.Namespace) -> dict:
             verbose=0,
         )
 
+<<<<<<< HEAD
     checkpoints_dir = run_dir / "checkpoints"
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
@@ -144,6 +267,18 @@ def train(config: argparse.Namespace) -> dict:
         verbose=0,
     )
     callback = CallbackList([metrics_cb, eval_cb, checkpoint_cb])
+=======
+    metrics_callback = EpisodeMetricsCallback(verbose=1)
+    best_model_callback = BestModelCheckpointCallback(checkpoints_dir=checkpoints_dir)
+    checkpoint_callback = CheckpointCallback(
+        save_freq=config.checkpoint_every_steps,
+        save_path=str(checkpoints_dir),
+        name_prefix="model_step",
+        save_replay_buffer=False,
+        save_vecnormalize=False,
+    )
+    callback = CallbackList([metrics_callback, best_model_callback, checkpoint_callback])
+>>>>>>> 11a6390 (training in hard conditions)
     model.learn(total_timesteps=config.total_timesteps, callback=callback)
     eval_env.close()
 
@@ -152,10 +287,10 @@ def train(config: argparse.Namespace) -> dict:
 
     metrics_csv = run_dir / "metrics.csv"
     with metrics_csv.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(
-            f, fieldnames=["episode", "global_step", "episode_reward", "episode_length"]
-        )
+        fieldnames = ["episode", "global_step", "episode_reward", "episode_length"] + metrics_callback.metric_columns
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
+<<<<<<< HEAD
         for i, (r, l, s) in enumerate(
             zip(metrics_cb.episode_rewards, metrics_cb.episode_lengths, metrics_cb.episode_steps), start=1
         ):
@@ -164,14 +299,46 @@ def train(config: argparse.Namespace) -> dict:
             )
 
     best_reward = max(metrics_cb.episode_rewards) if metrics_cb.episode_rewards else float("nan")
+=======
+        for row in metrics_callback.episode_rows:
+            writer.writerow(row)
+
+    last_base = checkpoints_dir / "last_model"
+    model.save(str(last_base))
+    last_ckpt = last_base.with_suffix(".zip")
+    last_ckpt_pt = checkpoints_dir / "last_model.pt"
+    if last_ckpt.exists():
+        shutil.copyfile(last_ckpt, last_ckpt_pt)
+
+    best_reward = max(metrics_callback.episode_rewards) if metrics_callback.episode_rewards else float("nan")
+    speed_means = [row["episode_speed_mean"] for row in metrics_callback.episode_rows if "episode_speed_mean" in row]
+    crash_flags = [row["episode_crashed"] for row in metrics_callback.episode_rows if "episode_crashed" in row]
+    lane_changes = [row["episode_lane_changes"] for row in metrics_callback.episode_rows if "episode_lane_changes" in row]
+>>>>>>> 11a6390 (training in hard conditions)
     summary = {
         "run_name": config.run_name,
         "env_id": SHARED_CORE_ENV_ID,
         "total_timesteps": config.total_timesteps,
+<<<<<<< HEAD
         "episodes": len(metrics_cb.episode_rewards),
+=======
+        "episodes": len(metrics_callback.episode_rewards),
+>>>>>>> 11a6390 (training in hard conditions)
         "best_episode_reward": best_reward,
+        "mean_episode_speed": float(np.mean(speed_means)) if speed_means else float("nan"),
+        "crash_rate": float(np.mean(crash_flags)) if crash_flags else float("nan"),
+        "mean_episode_lane_changes": float(np.mean(lane_changes)) if lane_changes else float("nan"),
+        "tracked_metric_columns": metrics_callback.metric_columns,
         "model_path": model_path + ".zip",
+<<<<<<< HEAD
         "best_checkpoint": str(checkpoints_dir / "best_model.zip"),
+=======
+        "checkpoints_dir": str(checkpoints_dir),
+        "best_checkpoint": str(checkpoints_dir / "best_model.pt"),
+        "last_checkpoint": str(last_ckpt),
+        "last_checkpoint_pt": str(last_ckpt_pt),
+        "checkpoint_every_steps": config.checkpoint_every_steps,
+>>>>>>> 11a6390 (training in hard conditions)
         "metrics_csv": str(metrics_csv),
     }
 
@@ -208,9 +375,15 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--n-steps", "--n_steps", type=int, default=512, help="Horizon de rollout PPO")
     parser.add_argument("--n-epochs", "--n_epochs", type=int, default=10, help="Epochs par update PPO")
 
+<<<<<<< HEAD
     parser.add_argument("--checkpoint-every-steps", "--checkpoint_every_steps", type=int, default=50_000,
                         help="Sauvegarde un checkpoint toutes les N steps")
 
+=======
+    parser.add_argument("--checkpoint-every-steps", "--checkpoint_every_steps", type=int, default=50_000)
+
+    # Be robust to accidental whitespace-only tokens from shell line-continuation formatting.
+>>>>>>> 11a6390 (training in hard conditions)
     if argv is None:
         argv = sys.argv[1:]
     argv = [arg for arg in argv if arg.strip()]

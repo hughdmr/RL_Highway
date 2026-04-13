@@ -1,0 +1,23 @@
+{
+  "run_name": "sb3_dqn",
+  "env_id": "highway-v0",
+  "total_timesteps": 50000,
+  "episodes": 3298,
+  "best_episode_reward": 194.91134572029114,
+  "mean_episode_speed": 24.581321480575355,
+  "crash_rate": 0.9993935718617344,
+  "mean_episode_lane_changes": 0.0,
+  "tracked_metric_columns": [
+    "episode_speed_mean",
+    "episode_crashed_mean",
+    "episode_action_mean",
+    "episode_TimeLimit.truncated_mean",
+    "episode_crashed",
+    "episode_lane_changes"
+  ],
+  "model_path": "results/sb3_dqn/model.zip",
+  "checkpoints_dir": "results/sb3_dqn/checkpoints",
+  "last_checkpoint": "results/sb3_dqn/checkpoints/last_model.zip",
+  "checkpoint_every_steps": 50000,
+  "metrics_csv": "results/sb3_dqn/metrics.csv"
+}
