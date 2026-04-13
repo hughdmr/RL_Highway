@@ -31,6 +31,7 @@ import torch
 from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback, EvalCallback
 
+from safe_driving_wrapper import SafeDrivingRewardWrapper
 from shared_core_config import SHARED_CORE_CONFIG, SHARED_CORE_ENV_ID
 
 
@@ -67,6 +68,7 @@ def make_env(seed: int):
     _ = highway_env.__name__
     env = gym.make(SHARED_CORE_ENV_ID)
     env.unwrapped.configure(SHARED_CORE_CONFIG)
+    env = SafeDrivingRewardWrapper(env)
     env.reset(seed=seed)
     return env
 

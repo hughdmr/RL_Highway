@@ -12,6 +12,7 @@ import numpy as np
 import torch
 
 from dqn_agent import DQNAgent
+from safe_driving_wrapper import SafeDrivingRewardWrapper
 from shared_core_config import SHARED_CORE_CONFIG, SHARED_CORE_ENV_ID
 
 
@@ -33,6 +34,7 @@ def make_env(seed: int):
     _ = highway_env.__name__
     env = gym.make(SHARED_CORE_ENV_ID)
     env.unwrapped.configure(SHARED_CORE_CONFIG)
+    env = SafeDrivingRewardWrapper(env)
     obs, info = env.reset(seed=seed)
     env.action_space.seed(seed)
     return env, obs, info
