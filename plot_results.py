@@ -9,6 +9,7 @@ Usage:
     python plot_results.py
     python plot_results.py --dqn-csv results/dqn_scratch/metrics.csv \
                            --sb3-csv results/sb3_dqn/metrics.csv \
+                           --ppo-csv results/sb3_ppo/metrics.csv \
                            --comparison-json results/comparison_multiseed.json
 """
 
@@ -28,11 +29,13 @@ def smooth(values, window: int = 20):
     return np.convolve(values, kernel, mode="valid")
 
 
+COLORS = ["#2196F3", "#F44336", "#4CAF50"]
+
+
 def plot_training_curves(paths: list, output: Path) -> None:
     fig, ax = plt.subplots(figsize=(9, 5))
 
-    colors = ["#2196F3", "#F44336"]
-    for (csv_path, label), color in zip(paths, colors):
+    for (csv_path, label), color in zip(paths, COLORS):
         p = Path(csv_path)
         if not p.exists():
             print(f"  [skip] {csv_path} not found")
@@ -82,8 +85,9 @@ def plot_comparison_bar(comparison_json: Path, output: Path) -> None:
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
+    colors = COLORS[: len(models)]
+
     # --- Bar chart overall ---
-    colors = ["#2196F3", "#F44336"]
     bars = axes[0].bar(models, means, yerr=stds, capsize=8, color=colors, alpha=0.8, edgecolor="black")
     axes[0].set_ylabel("Mean reward (50 eps × 3 seeds)")
     axes[0].set_title("Overall comparison")
@@ -98,17 +102,19 @@ def plot_comparison_bar(comparison_json: Path, output: Path) -> None:
 
     # --- Per-seed grouped bar ---
     x = np.arange(len(seeds))
-    width = 0.35
+    n_models = len(models)
+    width = 0.8 / n_models
     for i, (model, color) in enumerate(zip(models, colors)):
-        axes[1].bar(x + i * width, seed_means[model], width, label=model, color=color, alpha=0.8, edgecolor="black")
-    axes[1].set_xticks(x + width / 2)
+        offset = (i - n_models / 2 + 0.5) * width
+        axes[1].bar(x + offset, seed_means[model], width, label=model, color=color, alpha=0.8, edgecolor="black")
+    axes[1].set_xticks(x)
     axes[1].set_xticklabels([f"seed={s}" for s in seeds])
     axes[1].set_ylabel("Mean reward (50 eps)")
     axes[1].set_title("Per-seed breakdown")
     axes[1].legend()
     axes[1].grid(axis="y", alpha=0.3)
 
-    fig.suptitle("DQN-scratch vs SB3-DQN — highway-v0", fontsize=13, fontweight="bold")
+    fig.suptitle(" vs ".join(models) + " — highway-v0", fontsize=13, fontweight="bold")
     fig.tight_layout()
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=150)
@@ -120,6 +126,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dqn-csv", type=str, default="results/dqn_scratch/metrics.csv")
     parser.add_argument("--sb3-csv", type=str, default="results/sb3_dqn/metrics.csv")
+    parser.add_argument("--ppo-csv", type=str, default="", help="CSV de training SB3 PPO (optionnel)")
     parser.add_argument("--comparison-json", type=str, default="results/comparison_multiseed.json")
     parser.add_argument("--output-dir", type=str, default="results/figures")
     return parser.parse_args()
@@ -129,14 +136,15 @@ if __name__ == "__main__":
     args = parse_args()
     out_dir = Path(args.output_dir)
 
+    curves = [
+        (args.dqn_csv, "DQN-scratch"),
+        (args.sb3_csv, "SB3-DQN"),
+    ]
+    if args.ppo_csv:
+        curves.append((args.ppo_csv, "SB3-PPO"))
+
     print("Generating training curves...")
-    plot_training_curves(
-        [
-            (args.dqn_csv, "DQN-scratch"),
-            (args.sb3_csv, "SB3-DQN"),
-        ],
-        out_dir / "training_curves.png",
-    )
+    plot_training_curves(curves, out_dir / "training_curves.png")
 
     print("Generating comparison bar chart...")
     plot_comparison_bar(Path(args.comparison_json), out_dir / "comparison_bar.png")

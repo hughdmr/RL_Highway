@@ -19,7 +19,7 @@ SHARED_CORE_CONFIG = {
     "vehicles_count": 45,
     "controlled_vehicles": 1,
     "initial_lane_id": None,
-    "duration": 400,
+    "duration": 30,
     "ego_spacing": 2,
     "vehicles_density": 1.0,
     "collision_reward": -1.5,

@@ -1,3 +1,19 @@
+"""
+Train a Stable-Baselines3 agent (DQN ou PPO) on highway-v0.
+
+Usage:
+    # SB3 DQN (défaut)
+    python train_sb3.py --algo DQN
+
+    # SB3 PPO
+    python train_sb3.py --algo PPO
+
+    # PPO avec hyperparams custom
+    python train_sb3.py --algo PPO --total-timesteps 500000 --n-steps 1024 --lr 3e-4
+
+Les modèles sont sauvegardés dans results/sb3_dqn/ ou results/sb3_ppo/ selon l'algo.
+"""
+
 import argparse
 import csv
 import json

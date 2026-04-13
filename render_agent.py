@@ -1,5 +1,5 @@
 """
-Visualise a trained DQN agent on highway-v0.
+Visualise a trained agent (DQN-scratch, SB3 DQN, ou SB3 PPO) on highway-v0.
 
 Modes
 -----
@@ -9,16 +9,19 @@ Modes
 
 Examples
 --------
-  # Watch 3 episodes live:
+  # DQN scratch en direct :
   python render_agent.py --checkpoint results/dqn_scratch/checkpoints/best_model.pt
 
-  # Save 5 episodes as a video:
-  python render_agent.py --checkpoint results/dqn_scratch/checkpoints/best_model.pt \
-                          --mode video --episodes 5 --output results/videos/dqn_demo.mp4
+  # SB3 DQN en vidéo :
+  python render_agent.py --sb3 --checkpoint results/sb3_dqn/model.zip \
+                          --mode video --episodes 5 --output results/videos/sb3_dqn.mp4
 
-  # SB3 model:
-  python render_agent.py --sb3 --checkpoint results/sb3_dqn/best_model.zip \
-                          --mode video --output results/videos/sb3_demo.mp4
+  # SB3 PPO en direct (l'algo est auto-détecté) :
+  python render_agent.py --sb3 --checkpoint results/sb3_ppo/model.zip
+
+  # SB3 PPO en GIF :
+  python render_agent.py --sb3 --checkpoint results/sb3_ppo/model.zip \
+                          --mode gif --output results/videos/ppo_demo.gif
 """
 
 import argparse
@@ -62,9 +65,19 @@ def load_dqn(checkpoint_path: str, state_dim: int, action_dim: int):
 
 
 def load_sb3(checkpoint_path: str):
-    """Load a Stable-Baselines3 DQN model."""
-    from stable_baselines3 import DQN
-    return DQN.load(checkpoint_path)
+    """Load a Stable-Baselines3 model (DQN ou PPO, auto-détecté)."""
+    import zipfile
+    from stable_baselines3 import PPO, DQN
+
+    with zipfile.ZipFile(checkpoint_path) as zf:
+        raw = zf.read("data")
+
+    if b"PPOPolicy" in raw or b"ActorCriticPolicy" in raw:
+        print("  → algo détecté : PPO")
+        return PPO.load(checkpoint_path)
+    else:
+        print("  → algo détecté : DQN")
+        return DQN.load(checkpoint_path)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -188,6 +201,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--episodes", type=int, default=3,
                         help="Number of episodes to render.")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--random-seed", action="store_true",
+                        help="Tire un seed aléatoire à chaque lancement (ignore --seed).")
     parser.add_argument("--mode", type=str, default="human",
                         choices=["human", "video", "gif"],
                         help="Rendering mode: live window, MP4 video, or animated GIF.")
@@ -203,6 +218,11 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     args = parse_args()
+
+    if args.random_seed:
+        import random
+        args.seed = random.randint(0, 100_000)
+        print(f"Seed aléatoire : {args.seed}")
 
     # ── Resolve output path ──────────────────────────────────────────────────
     if args.mode in ("video", "gif") and not args.output:

@@ -1,12 +1,14 @@
 """
-Evaluate both the from-scratch DQN and the SB3 DQN across multiple seeds.
+Evaluate DQN-scratch, SB3 DQN, and SB3 PPO across multiple seeds.
 
 Outputs a JSON comparison table and prints a summary to stdout.
+PPO is optional : omit --ppo-model pour comparer seulement DQN-scratch et SB3-DQN.
 
 Usage:
     python evaluate_multiseed.py \
         --dqn-checkpoint results/dqn_scratch/checkpoints/best_model.pt \
         --sb3-model results/sb3_dqn/model.zip \
+        --ppo-model results/sb3_ppo/model.zip \
         --seeds 100 200 300 \
         --episodes 50 \
         --output-json results/comparison_multiseed.json
@@ -106,13 +108,26 @@ def evaluate_dqn_scratch(checkpoint_path: str, seeds: List[int], episodes: int, 
     }
 
 
+def _load_sb3_autodetect(model_path: str):
+    """Charge un modèle SB3 en détectant automatiquement l'algo depuis le zip."""
+    import zipfile
+    from stable_baselines3 import PPO, DQN
+
+    with zipfile.ZipFile(model_path) as zf:
+        raw = zf.read("data")
+
+    if b"PPOPolicy" in raw or b"ActorCriticPolicy" in raw:
+        return PPO.load(model_path), "SB3-PPO"
+    else:
+        return DQN.load(model_path), "SB3-DQN"
+
+
 def evaluate_sb3(model_path: str, seeds: List[int], episodes: int) -> Dict:
-    from stable_baselines3 import DQN as SB3DQN
+    model, label = _load_sb3_autodetect(model_path)
 
     per_seed: List[Dict] = []
     for seed in seeds:
         env = make_env(seed)
-        model = SB3DQN.load(model_path, env=env)
 
         def step_fn(obs):
             action, _ = model.predict(obs, deterministic=True)
@@ -122,11 +137,11 @@ def evaluate_sb3(model_path: str, seeds: List[int], episodes: int) -> Dict:
         result["seed"] = seed
         per_seed.append(result)
         env.close()
-        print(f"  [SB3-DQN]     seed={seed} mean={result['mean_reward']:.3f} ± {result['std_reward']:.3f}  crash={result['crash_rate']:.2%}")
+        print(f"  [{label}]     seed={seed} mean={result['mean_reward']:.3f} ± {result['std_reward']:.3f}  crash={result['crash_rate']:.2%}")
 
     overall_means = [r["mean_reward"] for r in per_seed]
     return {
-        "model": "SB3-DQN",
+        "model": label,
         "per_seed": per_seed,
         "overall_mean": float(np.mean(overall_means)),
         "overall_std": float(np.std(overall_means)),
@@ -158,6 +173,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dqn-checkpoint", type=str, default="results/dqn_scratch/checkpoints/best_model.pt")
     parser.add_argument("--sb3-model", type=str, default="results/sb3_dqn/model.zip")
+    parser.add_argument("--ppo-model", type=str, default="", help="Chemin vers le modèle SB3 PPO (.zip)")
     parser.add_argument("--seeds", type=int, nargs="+", default=[100, 200, 300])
     parser.add_argument("--episodes", type=int, default=50)
     parser.add_argument("--cpu", action="store_true")
@@ -175,6 +191,10 @@ if __name__ == "__main__":
 
     print(f"\nEvaluating SB3-DQN ({args.episodes} eps × {len(args.seeds)} seeds)...")
     results.append(evaluate_sb3(args.sb3_model, args.seeds, args.episodes))
+
+    if args.ppo_model:
+        print(f"\nEvaluating SB3-PPO ({args.episodes} eps × {len(args.seeds)} seeds)...")
+        results.append(evaluate_sb3(args.ppo_model, args.seeds, args.episodes))
 
     print_comparison_table(results)
 

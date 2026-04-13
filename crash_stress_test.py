@@ -6,13 +6,17 @@ Usage:
     # DQN scratch
     python crash_stress_test.py --checkpoint results/dqn_scratch/checkpoints/best_model.pt
 
-    # SB3
+    # SB3 DQN
     python crash_stress_test.py --sb3-model results/sb3_dqn/model.zip
 
-    # Les deux en même temps
+    # SB3 PPO
+    python crash_stress_test.py --ppo-model results/sb3_ppo/model.zip
+
+    # Les trois en même temps
     python crash_stress_test.py \
         --checkpoint results/dqn_scratch/checkpoints/best_model.pt \
         --sb3-model results/sb3_dqn/model.zip \
+        --ppo-model results/sb3_ppo/model.zip \
         --simulations 500
 """
 
@@ -134,22 +138,18 @@ def load_dqn_scratch(checkpoint_path: str, cpu: bool):
     return step_fn
 
 
-def load_sb3_dqn(model_path: str):
-    from stable_baselines3 import DQN as SB3DQN
+def load_sb3(model_path: str):
+    """Charge un modèle SB3 en auto-détectant l'algo depuis le zip."""
+    import zipfile
+    from stable_baselines3 import PPO, DQN
 
-    model = SB3DQN.load(model_path)
+    with zipfile.ZipFile(model_path) as zf:
+        raw = zf.read("data")
 
-    def step_fn(obs):
-        action, _ = model.predict(obs, deterministic=True)
-        return int(action)
-
-    return step_fn
-
-
-def load_sb3_ppo(model_path: str):
-    from stable_baselines3 import PPO as SB3PPO
-
-    model = SB3PPO.load(model_path)
+    if b"PPOPolicy" in raw or b"ActorCriticPolicy" in raw:
+        model = PPO.load(model_path)
+    else:
+        model = DQN.load(model_path)
 
     def step_fn(obs):
         action, _ = model.predict(obs, deterministic=True)
@@ -190,7 +190,7 @@ if __name__ == "__main__":
         all_results.append(result)
 
     if args.sb3_model:
-        step_fn = load_sb3_dqn(args.sb3_model)
+        step_fn = load_sb3(args.sb3_model)
         result = run_stress_test(
             step_fn,
             n_simulations=args.simulations,
@@ -200,7 +200,7 @@ if __name__ == "__main__":
         all_results.append(result)
 
     if args.ppo_model:
-        step_fn = load_sb3_ppo(args.ppo_model)
+        step_fn = load_sb3(args.ppo_model)
         result = run_stress_test(
             step_fn,
             n_simulations=args.simulations,
