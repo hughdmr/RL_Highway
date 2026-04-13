@@ -31,11 +31,7 @@ import highway_env
 import numpy as np
 import torch
 from stable_baselines3 import DQN, PPO
-<<<<<<< HEAD
 from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback, EvalCallback
-=======
-from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback
->>>>>>> 11a6390 (training in hard conditions)
 
 from shared_core_config import SHARED_CORE_CONFIG, SHARED_CORE_ENV_ID
 
@@ -245,7 +241,6 @@ def train(config: argparse.Namespace) -> dict:
             verbose=0,
         )
 
-<<<<<<< HEAD
     checkpoints_dir = run_dir / "checkpoints"
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
@@ -267,18 +262,6 @@ def train(config: argparse.Namespace) -> dict:
         verbose=0,
     )
     callback = CallbackList([metrics_cb, eval_cb, checkpoint_cb])
-=======
-    metrics_callback = EpisodeMetricsCallback(verbose=1)
-    best_model_callback = BestModelCheckpointCallback(checkpoints_dir=checkpoints_dir)
-    checkpoint_callback = CheckpointCallback(
-        save_freq=config.checkpoint_every_steps,
-        save_path=str(checkpoints_dir),
-        name_prefix="model_step",
-        save_replay_buffer=False,
-        save_vecnormalize=False,
-    )
-    callback = CallbackList([metrics_callback, best_model_callback, checkpoint_callback])
->>>>>>> 11a6390 (training in hard conditions)
     model.learn(total_timesteps=config.total_timesteps, callback=callback)
     eval_env.close()
 
@@ -287,58 +270,28 @@ def train(config: argparse.Namespace) -> dict:
 
     metrics_csv = run_dir / "metrics.csv"
     with metrics_csv.open("w", newline="", encoding="utf-8") as f:
-        fieldnames = ["episode", "global_step", "episode_reward", "episode_length"] + metrics_callback.metric_columns
+        fieldnames = ["episode", "global_step", "episode_reward", "episode_length"] + metrics_cb.metric_columns
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-<<<<<<< HEAD
-        for i, (r, l, s) in enumerate(
-            zip(metrics_cb.episode_rewards, metrics_cb.episode_lengths, metrics_cb.episode_steps), start=1
-        ):
-            writer.writerow(
-                {"episode": i, "global_step": s, "episode_reward": r, "episode_length": l}
-            )
-
-    best_reward = max(metrics_cb.episode_rewards) if metrics_cb.episode_rewards else float("nan")
-=======
-        for row in metrics_callback.episode_rows:
+        for row in metrics_cb.episode_rows:
             writer.writerow(row)
 
-    last_base = checkpoints_dir / "last_model"
-    model.save(str(last_base))
-    last_ckpt = last_base.with_suffix(".zip")
-    last_ckpt_pt = checkpoints_dir / "last_model.pt"
-    if last_ckpt.exists():
-        shutil.copyfile(last_ckpt, last_ckpt_pt)
-
-    best_reward = max(metrics_callback.episode_rewards) if metrics_callback.episode_rewards else float("nan")
-    speed_means = [row["episode_speed_mean"] for row in metrics_callback.episode_rows if "episode_speed_mean" in row]
-    crash_flags = [row["episode_crashed"] for row in metrics_callback.episode_rows if "episode_crashed" in row]
-    lane_changes = [row["episode_lane_changes"] for row in metrics_callback.episode_rows if "episode_lane_changes" in row]
->>>>>>> 11a6390 (training in hard conditions)
+    best_reward = max(metrics_cb.episode_rewards) if metrics_cb.episode_rewards else float("nan")
+    speed_means = [row["episode_speed_mean"] for row in metrics_cb.episode_rows if "episode_speed_mean" in row]
+    crash_flags = [row["episode_crashed"] for row in metrics_cb.episode_rows if "episode_crashed" in row]
+    lane_changes = [row["episode_lane_changes"] for row in metrics_cb.episode_rows if "episode_lane_changes" in row]
     summary = {
         "run_name": config.run_name,
         "env_id": SHARED_CORE_ENV_ID,
         "total_timesteps": config.total_timesteps,
-<<<<<<< HEAD
         "episodes": len(metrics_cb.episode_rewards),
-=======
-        "episodes": len(metrics_callback.episode_rewards),
->>>>>>> 11a6390 (training in hard conditions)
         "best_episode_reward": best_reward,
         "mean_episode_speed": float(np.mean(speed_means)) if speed_means else float("nan"),
         "crash_rate": float(np.mean(crash_flags)) if crash_flags else float("nan"),
         "mean_episode_lane_changes": float(np.mean(lane_changes)) if lane_changes else float("nan"),
-        "tracked_metric_columns": metrics_callback.metric_columns,
+        "tracked_metric_columns": metrics_cb.metric_columns,
         "model_path": model_path + ".zip",
-<<<<<<< HEAD
         "best_checkpoint": str(checkpoints_dir / "best_model.zip"),
-=======
-        "checkpoints_dir": str(checkpoints_dir),
-        "best_checkpoint": str(checkpoints_dir / "best_model.pt"),
-        "last_checkpoint": str(last_ckpt),
-        "last_checkpoint_pt": str(last_ckpt_pt),
-        "checkpoint_every_steps": config.checkpoint_every_steps,
->>>>>>> 11a6390 (training in hard conditions)
         "metrics_csv": str(metrics_csv),
     }
 
@@ -375,15 +328,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--n-steps", "--n_steps", type=int, default=512, help="Horizon de rollout PPO")
     parser.add_argument("--n-epochs", "--n_epochs", type=int, default=10, help="Epochs par update PPO")
 
-<<<<<<< HEAD
     parser.add_argument("--checkpoint-every-steps", "--checkpoint_every_steps", type=int, default=50_000,
                         help="Sauvegarde un checkpoint toutes les N steps")
 
-=======
-    parser.add_argument("--checkpoint-every-steps", "--checkpoint_every_steps", type=int, default=50_000)
-
-    # Be robust to accidental whitespace-only tokens from shell line-continuation formatting.
->>>>>>> 11a6390 (training in hard conditions)
     if argv is None:
         argv = sys.argv[1:]
     argv = [arg for arg in argv if arg.strip()]
