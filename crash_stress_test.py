@@ -30,7 +30,7 @@ import numpy as np
 import torch
 
 from dqn_agent import DQNAgent
-from shared_core_config import SHARED_CORE_CONFIG, SHARED_CORE_ENV_ID
+from eval_shared_core_config import SHARED_CORE_CONFIG, SHARED_CORE_ENV_ID
 
 
 def make_env():
