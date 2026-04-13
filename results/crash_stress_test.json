@@ -1,27 +1,75 @@
 [
   {
     "model": "DQN-scratch",
-    "n_simulations": 100,
-    "n_crashes": 14,
-    "crash_rate": 0.14,
-    "mean_reward": 20.975778896372084,
-    "std_reward": 3.704851108307215,
-    "mean_episode_length": 28.24,
+    "n_simulations": 20,
+    "n_crashes": 1,
+    "crash_rate": 0.05,
+    "mean_reward": 21.361311787618128,
+    "std_reward": 3.0872094772511205,
+    "mean_episode_length": 29.0,
     "crash_seeds": [
+      14
+    ]
+  },
+  {
+    "model": "SB3-DQN",
+    "n_simulations": 20,
+    "n_crashes": 11,
+    "crash_rate": 0.55,
+    "mean_reward": 22.425924086402993,
+    "std_reward": 8.062902469370583,
+    "mean_episode_length": 23.9,
+    "crash_seeds": [
+      0,
+      2,
+      3,
+      4,
+      10,
+      11,
+      12,
       14,
-      21,
-      23,
-      42,
-      47,
-      53,
-      56,
-      67,
-      69,
-      70,
-      75,
-      81,
-      89,
-      92
+      15,
+      16,
+      18
+    ]
+  },
+  {
+    "model": "SB3-PPO",
+    "n_simulations": 20,
+    "n_crashes": 11,
+    "crash_rate": 0.55,
+    "mean_reward": 22.425924086402993,
+    "std_reward": 8.062902469370583,
+    "mean_episode_length": 23.9,
+    "crash_seeds": [
+      0,
+      2,
+      3,
+      4,
+      10,
+      11,
+      12,
+      14,
+      15,
+      16,
+      18
+    ]
+  },
+  {
+    "model": "SB3-Distance",
+    "n_simulations": 20,
+    "n_crashes": 6,
+    "crash_rate": 0.3,
+    "mean_reward": 19.543175078631144,
+    "std_reward": 6.421168104831348,
+    "mean_episode_length": 24.85,
+    "crash_seeds": [
+      2,
+      8,
+      10,
+      16,
+      18,
+      19
     ]
   }
 ]

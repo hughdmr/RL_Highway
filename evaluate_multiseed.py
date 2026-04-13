@@ -122,8 +122,9 @@ def _load_sb3_autodetect(model_path: str):
         return DQN.load(model_path), "SB3-DQN"
 
 
-def evaluate_sb3(model_path: str, seeds: List[int], episodes: int) -> Dict:
-    model, label = _load_sb3_autodetect(model_path)
+def evaluate_sb3(model_path: str, seeds: List[int], episodes: int, label: str = "") -> Dict:
+    model, detected_label = _load_sb3_autodetect(model_path)
+    label = label or detected_label
 
     per_seed: List[Dict] = []
     for seed in seeds:
@@ -174,6 +175,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dqn-checkpoint", type=str, default="results/dqn_scratch/checkpoints/best_model.pt")
     parser.add_argument("--sb3-model", type=str, default="results/sb3_dqn/model.zip")
     parser.add_argument("--ppo-model", type=str, default="", help="Chemin vers le modèle SB3 PPO (.zip)")
+    parser.add_argument("--extra-models", type=str, nargs="*", default=[],
+                        metavar="CHEMIN:LABEL",
+                        help="Modèles SB3 supplémentaires au format chemin:label (ex: results/sb3_distance/model.zip:SB3-Distance)")
     parser.add_argument("--seeds", type=int, nargs="+", default=[100, 200, 300])
     parser.add_argument("--episodes", type=int, default=50)
     parser.add_argument("--cpu", action="store_true")
@@ -195,6 +199,14 @@ if __name__ == "__main__":
     if args.ppo_model:
         print(f"\nEvaluating SB3-PPO ({args.episodes} eps × {len(args.seeds)} seeds)...")
         results.append(evaluate_sb3(args.ppo_model, args.seeds, args.episodes))
+
+    for entry in args.extra_models:
+        if ":" not in entry:
+            print(f"  [skip] format invalide '{entry}' — attendu chemin:label")
+            continue
+        path, label = entry.split(":", 1)
+        print(f"\nEvaluating {label} ({args.episodes} eps × {len(args.seeds)} seeds)...")
+        results.append(evaluate_sb3(path, args.seeds, args.episodes, label=label))
 
     print_comparison_table(results)
 

@@ -29,7 +29,7 @@ def smooth(values, window: int = 20):
     return np.convolve(values, kernel, mode="valid")
 
 
-COLORS = ["#2196F3", "#F44336", "#4CAF50"]
+COLORS = ["#2196F3", "#F44336", "#4CAF50", "#FF9800", "#9C27B0", "#00BCD4"]
 
 
 def plot_training_curves(paths: list, output: Path) -> None:
@@ -127,6 +127,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dqn-csv", type=str, default="results/dqn_scratch/metrics.csv")
     parser.add_argument("--sb3-csv", type=str, default="results/sb3_dqn/metrics.csv")
     parser.add_argument("--ppo-csv", type=str, default="", help="CSV de training SB3 PPO (optionnel)")
+    parser.add_argument("--extra-csvs", type=str, nargs="*", default=[],
+                        metavar="CHEMIN:LABEL",
+                        help="CSVs supplémentaires au format chemin:label (ex: results/sb3_distance/metrics.csv:SB3-Distance)")
     parser.add_argument("--comparison-json", type=str, default="results/comparison_multiseed.json")
     parser.add_argument("--output-dir", type=str, default="results/figures")
     return parser.parse_args()
@@ -142,6 +145,12 @@ if __name__ == "__main__":
     ]
     if args.ppo_csv:
         curves.append((args.ppo_csv, "SB3-PPO"))
+    for entry in args.extra_csvs:
+        if ":" not in entry:
+            print(f"  [skip] format invalide '{entry}' — attendu chemin:label")
+            continue
+        path, label = entry.split(":", 1)
+        curves.append((path, label))
 
     print("Generating training curves...")
     plot_training_curves(curves, out_dir / "training_curves.png")

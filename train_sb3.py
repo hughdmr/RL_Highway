@@ -11,7 +11,10 @@ Usage:
     # PPO avec hyperparams custom
     python train_sb3.py --algo PPO --total-timesteps 500000 --n-steps 1024 --lr 3e-4
 
-Les modèles sont sauvegardés dans results/sb3_dqn/ ou results/sb3_ppo/ selon l'algo.
+Checkpoints sauvegardés dans results/<run_name>/checkpoints/ :
+  - best_model.zip     : meilleur modèle selon l'évaluation périodique
+  - model_step_N.zip   : checkpoint toutes les --checkpoint-every-steps steps
+  - ../model.zip       : dernier modèle (fin du training)
 """
 
 import argparse
@@ -26,7 +29,7 @@ import highway_env
 import numpy as np
 import torch
 from stable_baselines3 import DQN, PPO
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback, EvalCallback
 
 from shared_core_config import SHARED_CORE_CONFIG, SHARED_CORE_ENV_ID
 
@@ -118,11 +121,32 @@ def train(config: argparse.Namespace) -> dict:
             verbose=0,
         )
 
-    callback = EpisodeMetricsCallback(verbose=1)
+    checkpoints_dir = run_dir / "checkpoints"
+    checkpoints_dir.mkdir(parents=True, exist_ok=True)
+
+    eval_env = make_env(config.seed + 1)
+    metrics_cb = EpisodeMetricsCallback(verbose=1)
+    eval_cb = EvalCallback(
+        eval_env,
+        best_model_save_path=str(checkpoints_dir),
+        log_path=str(checkpoints_dir),
+        eval_freq=max(config.checkpoint_every_steps // 4, 1000),
+        n_eval_episodes=10,
+        deterministic=True,
+        verbose=0,
+    )
+    checkpoint_cb = CheckpointCallback(
+        save_freq=config.checkpoint_every_steps,
+        save_path=str(checkpoints_dir),
+        name_prefix="model_step",
+        verbose=0,
+    )
+    callback = CallbackList([metrics_cb, eval_cb, checkpoint_cb])
     model.learn(total_timesteps=config.total_timesteps, callback=callback)
+    eval_env.close()
 
     model_path = str(run_dir / "model")
-    model.save(model_path)
+    model.save(model_path)  # last model
 
     metrics_csv = run_dir / "metrics.csv"
     with metrics_csv.open("w", newline="", encoding="utf-8") as f:
@@ -131,20 +155,21 @@ def train(config: argparse.Namespace) -> dict:
         )
         writer.writeheader()
         for i, (r, l, s) in enumerate(
-            zip(callback.episode_rewards, callback.episode_lengths, callback.episode_steps), start=1
+            zip(metrics_cb.episode_rewards, metrics_cb.episode_lengths, metrics_cb.episode_steps), start=1
         ):
             writer.writerow(
                 {"episode": i, "global_step": s, "episode_reward": r, "episode_length": l}
             )
 
-    best_reward = max(callback.episode_rewards) if callback.episode_rewards else float("nan")
+    best_reward = max(metrics_cb.episode_rewards) if metrics_cb.episode_rewards else float("nan")
     summary = {
         "run_name": config.run_name,
         "env_id": SHARED_CORE_ENV_ID,
         "total_timesteps": config.total_timesteps,
-        "episodes": len(callback.episode_rewards),
+        "episodes": len(metrics_cb.episode_rewards),
         "best_episode_reward": best_reward,
         "model_path": model_path + ".zip",
+        "best_checkpoint": str(checkpoints_dir / "best_model.zip"),
         "metrics_csv": str(metrics_csv),
     }
 
@@ -181,6 +206,10 @@ def parse_args(argv=None) -> argparse.Namespace:
     # PPO-only
     parser.add_argument("--n-steps", "--n_steps", type=int, default=512, help="Horizon de rollout PPO")
     parser.add_argument("--n-epochs", "--n_epochs", type=int, default=10, help="Epochs par update PPO")
+
+    # Checkpoints
+    parser.add_argument("--checkpoint-every-steps", "--checkpoint_every_steps", type=int, default=50_000,
+                        help="Sauvegarde un checkpoint toutes les N steps")
 
     # Be robust to accidental whitespace-only tokens from shell line-continuation formatting.
     if argv is None:

@@ -22,6 +22,12 @@ Examples
   # SB3 PPO en GIF :
   python render_agent.py --sb3 --checkpoint results/sb3_ppo/model.zip \
                           --mode gif --output results/videos/ppo_demo.gif
+
+  # Scénarios aléatoires à chaque lancement :
+  python render_agent.py --sb3 --checkpoint results/sb3_ppo/model.zip --random-seed
+
+  # Fixer un scénario précis (reproductible) :
+  python render_agent.py --sb3 --checkpoint results/sb3_ppo/model.zip --seed 42
 """
 
 import argparse

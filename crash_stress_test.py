@@ -163,6 +163,9 @@ def parse_args():
     parser.add_argument("--checkpoint", type=str, default="", help="Chemin vers le checkpoint DQN scratch (.pt)")
     parser.add_argument("--sb3-model", type=str, default="", help="Chemin vers le modèle SB3 DQN (.zip)")
     parser.add_argument("--ppo-model", type=str, default="", help="Chemin vers le modèle SB3 PPO (.zip)")
+    parser.add_argument("--extra-models", type=str, nargs="*", default=[],
+                        metavar="CHEMIN:LABEL",
+                        help="Modèles SB3 supplémentaires au format chemin:label (ex: results/sb3_distance/model.zip:SB3-Distance)")
     parser.add_argument("--simulations", type=int, default=500, help="Nombre de simulations (défaut: 500)")
     parser.add_argument("--base-seed", type=int, default=0, help="Seed de départ (chaque sim = base_seed + i)")
     parser.add_argument("--cpu", action="store_true", help="Forcer l'utilisation du CPU")
@@ -206,6 +209,20 @@ if __name__ == "__main__":
             n_simulations=args.simulations,
             base_seed=args.base_seed,
             label="SB3-PPO",
+        )
+        all_results.append(result)
+
+    for entry in args.extra_models:
+        if ":" not in entry:
+            print(f"  [skip] format invalide '{entry}' — attendu chemin:label")
+            continue
+        path, label = entry.split(":", 1)
+        step_fn = load_sb3(path)
+        result = run_stress_test(
+            step_fn,
+            n_simulations=args.simulations,
+            base_seed=args.base_seed,
+            label=label,
         )
         all_results.append(result)
 
