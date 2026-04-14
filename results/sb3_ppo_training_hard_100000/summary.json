@@ -1,9 +1,9 @@
 {
   "run_name": "sb3_ppo",
   "env_id": "highway-v0",
-  "total_timesteps": 50000,
-  "episodes": 337,
-  "best_episode_reward": 212.3068934082985,
+  "total_timesteps": 100000,
+  "episodes": 7404,
+  "best_episode_reward": 53.49014848371735,
   "model_path": "results/sb3_ppo/model.zip",
   "best_checkpoint": "results/sb3_ppo/checkpoints/best_model.zip",
   "metrics_csv": "results/sb3_ppo/metrics.csv"

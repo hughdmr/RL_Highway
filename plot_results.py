@@ -29,11 +29,17 @@ def smooth(values, window: int = 20):
     return np.convolve(values, kernel, mode="valid")
 
 
+def format_steps_in_k(steps: np.ndarray) -> np.ndarray:
+    return steps / 1000.0
+
+
 COLORS = ["#2196F3", "#F44336", "#4CAF50", "#FF9800", "#9C27B0", "#00BCD4"]
 
 
 def plot_training_curves(paths: list, output: Path) -> None:
-    fig, ax = plt.subplots(figsize=(9, 5))
+    fig, (ax_first, ax_rest) = plt.subplots(2, 1, figsize=(10, 8), sharey=True)
+    first_window = 50_000
+    max_step = 200_000
 
     for (csv_path, label), color in zip(paths, COLORS):
         p = Path(csv_path)
@@ -46,20 +52,46 @@ def plot_training_curves(paths: list, output: Path) -> None:
         smoothed = smooth(rewards)
         # align x after smoothing
         trim = len(rewards) - len(smoothed)
-        ax.plot(steps[trim:], smoothed, label=label, color=color, linewidth=1.8)
-        ax.fill_between(
-            steps[trim:],
-            smoothed - rewards[trim:].std(),
-            smoothed + rewards[trim:].std(),
-            alpha=0.15,
-            color=color,
-        )
+        x = steps[trim:]
+        y = smoothed
+        y_std = rewards[trim:].std()
 
-    ax.set_xlabel("Environment steps")
-    ax.set_ylabel("Episode reward (smoothed)")
-    ax.set_title("Training curves — highway-v0")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
+        first_mask = x <= first_window
+        rest_mask = x <= max_step
+
+        if np.any(first_mask):
+            ax_first.plot(x[first_mask], y[first_mask], label=label, color=color, linewidth=1.8)
+            ax_first.fill_between(
+                x[first_mask],
+                y[first_mask] - y_std,
+                y[first_mask] + y_std,
+                alpha=0.15,
+                color=color,
+            )
+
+        if np.any(rest_mask):
+            ax_rest.plot(format_steps_in_k(x[rest_mask]), y[rest_mask], label=label, color=color, linewidth=1.8)
+            ax_rest.fill_between(
+                format_steps_in_k(x[rest_mask]),
+                y[rest_mask] - y_std,
+                y[rest_mask] + y_std,
+                alpha=0.15,
+                color=color,
+            )
+
+    ax_first.set_ylabel("Episode reward (smoothed)")
+    ax_first.set_title("Training curves — first 50k steps")
+    ax_first.set_xlim(0, first_window)
+    ax_first.grid(True, alpha=0.3)
+    ax_first.legend()
+
+    ax_rest.set_xlabel("Environment steps (k)")
+    ax_rest.set_ylabel("Episode reward (smoothed)")
+    ax_rest.set_title("Training curves — 0 to 200k steps")
+    ax_rest.set_xlim(0, max_step / 1000.0)
+    ax_rest.grid(True, alpha=0.3)
+    ax_rest.legend()
+
     fig.tight_layout()
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=150)
