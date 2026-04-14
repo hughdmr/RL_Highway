@@ -1,11 +1,11 @@
 {
   "run_name": "sb3_dqn",
   "env_id": "highway-v0",
-  "total_timesteps": 1000,
-  "episodes": 138,
-  "best_episode_reward": 24.17566265538335,
-  "mean_episode_speed": 24.550300393103676,
-  "crash_rate": 1.0,
+  "total_timesteps": 200000,
+  "episodes": 11567,
+  "best_episode_reward": 97.75491005182266,
+  "mean_episode_speed": 24.72783798551709,
+  "crash_rate": 0.97657128036656,
   "mean_episode_lane_changes": NaN,
   "tracked_metric_columns": [
     "episode_speed_mean",
