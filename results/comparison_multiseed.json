@@ -3,56 +3,56 @@
     "model": "DQN-scratch",
     "per_seed": [
       {
-        "mean_reward": 11.22235421840032,
-        "std_reward": 9.442424241984686,
-        "mean_length": 12.4,
-        "crash_rate": 1.0,
+        "mean_reward": 20.15354873395025,
+        "std_reward": 5.1200868035166085,
+        "mean_length": 27.22,
+        "crash_rate": 0.16,
         "seed": 100
       },
       {
-        "mean_reward": 11.006420656943593,
-        "std_reward": 3.6533732196768804,
-        "mean_length": 12.2,
-        "crash_rate": 1.0,
+        "mean_reward": 20.226487028769153,
+        "std_reward": 4.594968921425502,
+        "mean_length": 26.96,
+        "crash_rate": 0.2,
         "seed": 200
       },
       {
-        "mean_reward": 10.128475848555388,
-        "std_reward": 6.514597772696831,
-        "mean_length": 11.2,
-        "crash_rate": 1.0,
+        "mean_reward": 20.296278479852813,
+        "std_reward": 4.662280357021157,
+        "mean_length": 27.06,
+        "crash_rate": 0.2,
         "seed": 300
       }
     ],
-    "overall_mean": 10.785750241299766,
-    "overall_std": 0.4730497128625177
+    "overall_mean": 20.225438080857405,
+    "overall_std": 0.058273895299947004
   },
   {
     "model": "SB3-DQN",
     "per_seed": [
       {
-        "mean_reward": 19.502957415225982,
-        "std_reward": 8.109280018238879,
-        "mean_length": 22.6,
-        "crash_rate": 0.6,
+        "mean_reward": 21.445797926814958,
+        "std_reward": 5.872816644339642,
+        "mean_length": 26.38,
+        "crash_rate": 0.36,
         "seed": 100
       },
       {
-        "mean_reward": 21.091961329172513,
-        "std_reward": 6.963380250550898,
-        "mean_length": 24.1,
-        "crash_rate": 0.6,
+        "mean_reward": 19.96088048763126,
+        "std_reward": 6.156584753518038,
+        "mean_length": 25.04,
+        "crash_rate": 0.42,
         "seed": 200
       },
       {
-        "mean_reward": 17.01385708900794,
-        "std_reward": 7.427869794672002,
-        "mean_length": 20.1,
-        "crash_rate": 0.7,
+        "mean_reward": 20.7368222606765,
+        "std_reward": 5.3997619827618655,
+        "mean_length": 26.04,
+        "crash_rate": 0.4,
         "seed": 300
       }
     ],
-    "overall_mean": 19.202925277802148,
-    "overall_std": 1.6783420412274743
+    "overall_mean": 20.714500225040908,
+    "overall_std": 0.6064204565888558
   }
 ]
