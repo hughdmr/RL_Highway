@@ -4,3 +4,7 @@ torch>=2.1
 numpy>=1.24
 stable-baselines3>=2.0
 matplotlib>=3.7
+imagio
+tensorboard
+tqdm 
+rich
